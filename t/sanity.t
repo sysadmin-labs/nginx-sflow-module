@@ -91,8 +91,8 @@ served
 
 
 === TEST 5: a configuration file that is there
---- http_config eval
-"    sflow_config_file $::HtmlDir/hsflowd.auto;"
+--- http_config
+    sflow_config_file $TEST_NGINX_HTML_DIR/hsflowd.auto;
 --- user_files
 >>> hsflowd.auto
 rev_start=1
