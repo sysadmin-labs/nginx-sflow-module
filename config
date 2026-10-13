@@ -1,0 +1,39 @@
+ngx_addon_name=ngx_http_sflow_module
+
+SFLOW_SRCS="                                                                \
+            $ngx_addon_dir/src/ngx_http_sflow_module.c                      \
+            $ngx_addon_dir/src/ngx_http_sflow_config.c                      \
+            $ngx_addon_dir/src/ngx_http_sflow_api.c                         \
+            "
+
+SFLOW_DEPS="                                                                \
+            $ngx_addon_dir/src/ngx_http_sflow.h                             \
+            $ngx_addon_dir/src/ngx_http_sflow_api.h                         \
+            $ngx_addon_dir/src/ngx_http_sflow_config.h                      \
+            "
+
+# The agent builds its datagrams itself and needs no library for it, but it
+# does ask nginx for MD5 and SHA1 -- see sfl_random_init() and the agent
+# address handling in src/ngx_http_sflow_api.c.
+USE_SHA1=YES
+USE_MD5=YES
+
+if [ -n "$ngx_module_link" ]; then
+    ngx_module_type=HTTP
+    ngx_module_name=$ngx_addon_name
+    ngx_module_incs="$ngx_addon_dir/src"
+    ngx_module_srcs="$SFLOW_SRCS"
+    ngx_module_deps="$SFLOW_DEPS"
+
+    . auto/module
+
+    # A loadable module is linked on its own, so what the core build does
+    # with USE_SHA1 and USE_MD5 above does not reach it.  nginx's own
+    # ngx_crypt/ngx_sha1 live in the binary, so the symbols resolve at load
+    # time rather than at link time, which is why nothing is added here.
+else
+    HTTP_MODULES="$HTTP_MODULES $ngx_addon_name"
+    NGX_ADDON_SRCS="$NGX_ADDON_SRCS $SFLOW_SRCS"
+    NGX_ADDON_DEPS="$NGX_ADDON_DEPS $SFLOW_DEPS"
+    CORE_INCS="$CORE_INCS $ngx_addon_dir/src"
+fi

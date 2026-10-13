@@ -1,0 +1,42 @@
+name: Datagrams
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    # Monday morning, so a new nginx release that breaks the module shows
+    # up here and not in somebody's build
+    - cron: '59 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  datagrams:
+    name: what the agent puts on the wire
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The suite in t/ can say that a configuration is accepted or refused and
+    # that requests are still served.  It cannot say that anything was ever
+    # sent, and a module that samples nothing passes every one of those
+    # blocks.  Here a collector catches the datagrams and takes them apart:
+    # the version 5 header, the flow sample with its sampling rate, the HTTP
+    # record with method, status, URI and user agent, the socket record with
+    # both ends, and the counters block.
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+        with:
+          test-nginx: 'false'
+
+      - name: Build nginx
+        run: |
+          . .github/versions.env
+          ci/build.sh "$NGINX_VERSION" "$HOME/nginx"
+
+      - name: Catch the samples and decode them
+        run: ci/datagrams.sh "$HOME/nginx/sbin/nginx"
