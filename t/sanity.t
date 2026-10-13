@@ -90,17 +90,18 @@ served
 
 
 
-=== TEST 5: a configuration file that is there
+=== TEST 5: a configuration file that is there and says nothing
+# An empty file is treated the same as a missing one, deliberately: a file
+# being rewritten is briefly empty, and a monitoring agent that stops
+# sampling for that moment is worse than one that keeps the rate it had.
+#
+# /dev/null rather than a file of our own, because a path cannot be built
+# here: $TEST_NGINX_HTML_DIR is substituted from the environment and nothing
+# defines it, and a relative path would be resolved against whatever
+# directory prove was started from.  A file with real contents in it is
+# ci/datagrams.sh's business, and that is where the samples are checked.
 --- http_config
-    sflow_config_file $TEST_NGINX_HTML_DIR/hsflowd.auto;
---- user_files
->>> hsflowd.auto
-rev_start=1
-sampling=1000
-polling=20
-agentIP=127.0.0.1
-collector=127.0.0.1 16343
-rev_end=1
+    sflow_config_file /dev/null;
 --- config
     sflow on;
     location = /t {
