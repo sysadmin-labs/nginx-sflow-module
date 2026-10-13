@@ -295,6 +295,24 @@ http {
         location = /gone {
             return 404 'gone';
         }
+
+        # Three levels, which is what the switch has states for: on up in
+        # the http block, off here, on again inside.  With a two-state flag
+        # the innermost "on" could not win -- "nothing said here" and "off"
+        # looked the same to the merge -- and that is only visible where
+        # the samples are, not in a status code.
+        location /inherit/ {
+            sflow off;
+
+            location = /inherit/loud {
+                sflow on;
+                return 200 'loud';
+            }
+
+            location = /inherit/mute {
+                return 200 'mute';
+            }
+        }
     }
 }
 EOF
@@ -313,6 +331,14 @@ echo "--- ten sampled requests at sampling=1 ---"
 i=0
 while [ "$i" -lt 10 ]; do
 	curl -s --max-time 5 "http://127.0.0.1:$PORT/sampled" -o /dev/null || true
+	i=$((i + 1))
+done
+
+echo "--- an inner location that turns sampling back on ---"
+i=0
+while [ "$i" -lt 3 ]; do
+	curl -s --max-time 5 "http://127.0.0.1:$PORT/inherit/loud" -o /dev/null || true
+	curl -s --max-time 5 "http://127.0.0.1:$PORT/inherit/mute" -o /dev/null || true
 	i=$((i + 1))
 done
 
@@ -367,6 +393,16 @@ if grep -q 'uri=/quiet' "$S"; then
 	note "a location with \"sflow off\" was sampled anyway"
 else
 	echo "  /quiet produced none"
+fi
+
+echo "--- the inner \"on\" won over the \"off\" around it ---"
+loud=$(grep -c 'uri=/inherit/loud' "$S" || true)
+mute=$(grep -c 'uri=/inherit/mute' "$S" || true)
+if [ "$loud" -ge 3 ] && [ "$mute" -eq 0 ]; then
+	echo "  $loud samples for the inner location, none for the one beside it"
+else
+	note "expected at least 3 samples for /inherit/loud and none for /inherit/mute"
+	note "got $loud and $mute"
 fi
 
 echo "--- the sampling rate in the sample is the configured one ---"

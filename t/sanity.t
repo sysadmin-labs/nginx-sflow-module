@@ -6,6 +6,11 @@
 # requests must not change what the client gets, must not fall over when
 # there is no configuration to sample by, and must not mind which method or
 # status code came past.
+#
+# Which means: none of these blocks can tell sampling from no sampling.  The
+# bodies they compare come from "return", not from the module, and that is
+# the point -- whether anything was sampled, and what was in it, is asked in
+# ci/datagrams.sh, where there is something to catch it with.
 
 use Test::Nginx::Socket 'no_plan';
 

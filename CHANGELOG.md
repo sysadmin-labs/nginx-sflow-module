@@ -41,6 +41,15 @@ Newest first.  Dates are release dates.
   redundant.  The FreeBSD port carried a patch for exactly this; it does not
   need to any more.
 
+- The padding of an XDR string was skipped over rather than written.  A
+  string is rounded up to a four-byte boundary and `datap` is a word
+  pointer, so the one to three bytes after a string whose length is not a
+  multiple of four stayed as they were -- and the buffer is cleared once per
+  datagram, not once per sample.  A second sample in the same datagram
+  therefore sent the tail of what the first one had written there to the
+  collector.  Not an overflow; bytes of somebody's request leaving the
+  machine.
+
 ### Added
 
 - `sflow_config_file <path>`, in the http block.  The agent used to read

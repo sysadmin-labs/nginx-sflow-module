@@ -828,8 +828,23 @@ static void put128(SFLReceiver *receiver, byte_t *val)
 
 static void putString(SFLReceiver *receiver, SFLString *s)
 {
+    uint32_t pad = (4 - (s->len & 3)) & 3;
+
     putNet32(receiver, s->len);
     memcpy(receiver->sampleCollector.datap, s->str, s->len);
+
+    /* The padding has to be written, not merely skipped over.  XDR rounds a
+     * string up to a four-byte boundary, and datap is a word pointer, so
+     * advancing it left the one to three bytes after the string as they
+     * were -- and the buffer is cleared once per datagram, not once per
+     * sample.  A string whose length is not a multiple of four therefore
+     * sent the tail of whatever the previous sample had written there to
+     * the collector.
+     */
+    if (pad) {
+        memset(((u_char *)receiver->sampleCollector.datap) + s->len, 0, pad);
+    }
+
     receiver->sampleCollector.datap += (s->len + 3) / 4; /* pad to 4-byte boundary */
 }
 
