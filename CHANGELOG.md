@@ -24,6 +24,17 @@ Newest first.  Dates are release dates.
   the merge, which then inherited the outer `off` either way.  It has three
   states now and merges with `ngx_conf_merge_value()`.
 
+- The module did not build with gcc 12 or later at all.  `sfwb_cb_counters()`
+  built its two counter elements on its own stack and linked them into the
+  structure its caller passed, which `-Wdangling-pointer` refuses and nginx
+  turns into an error with `-Werror`.  Nothing ever read a dangling pointer
+  -- `sfl_poller_tick()` keeps that structure on its own stack and drops it
+  as soon as the callback returns, and everything is serialised before that
+  -- but a compiler cannot see that through an indirect call.  The two
+  elements have static storage now, which is what makes the lifetime match
+  the use.  Only gcc said anything: clang has no such warning, which is why
+  the FreeBSD job was green while every Linux one failed.
+
 - `EAI_NODATA` is named only where it exists.  It is gone from FreeBSD, and
   on glibc it is a deprecated synonym for `EAI_NONAME`, which the same
   switch already handles -- so the case label it had was both unportable and

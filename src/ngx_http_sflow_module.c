@@ -615,8 +615,22 @@ sfwb_cb_error(void *magic, SFLAgent *agent, char *msg)
 static void
 sfwb_cb_counters(void *magic, SFLPoller *poller, SFL_COUNTERS_SAMPLE_TYPE *cs)
 {
-    SFLCounters_sample_element httpElem;
-    SFLCounters_sample_element parElem;
+    /* Static, because their addresses end up in the caller's structure.
+     *
+     * sfl_poller_tick() keeps that structure on its own stack and drops it
+     * as soon as this returns, and everything is serialised by
+     * ngx_http_sflow_write_counter_sample() below before that happens, so
+     * nothing ever read a dangling pointer.  A compiler cannot see that
+     * through an indirect call, and gcc 12 and later refuse the store
+     * outright under -Werror=dangling-pointer, which is how this module
+     * stopped building with the compiler the runners have.
+     *
+     * Static storage is what makes the lifetime match the use.  One tick
+     * runs at a time in a worker and each is memset before it is filled, so
+     * there is nothing to carry over between them.
+     */
+    static SFLCounters_sample_element httpElem;
+    static SFLCounters_sample_element parElem;
     uint32_t parent_ds_index;
     ngx_http_sflow_shm_data_t *shm_data;
     int s = 0;
