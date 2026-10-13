@@ -4,6 +4,10 @@ sFlow licence.  Upstream states that, and only that, in two lines:
     Copyright (c) 2011-2013 InMon Corp. Licensed under the terms of the InMon sFlow licence:
     http://www.inmon.com/technology/sflowlicense.txt
 
+The source files themselves carry a wider span than those two lines do:
+every one of them is headed "Copyright (c) 2002-2014 InMon Corp.", and those
+headers are unaltered.
+
 A licence that lives at a URL is a licence that can move or disappear, so
 the text that URL served is reproduced below, in full and unaltered.
 Retrieved 2026-10-13; sha256 of the retrieved file:
